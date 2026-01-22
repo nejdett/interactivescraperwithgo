@@ -1,0 +1,84 @@
+services:
+  tor:
+    image: dperson/torproxy
+    container_name: cti-tor
+    networks:
+      - cti_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "--socks5", "localhost:9050", "--fail", "https://check.torproject.org"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: cti-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-cti_db}
+      POSTGRES_USER: ${DB_USER:-cti_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - cti_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cti_user} -d ${DB_NAME:-cti_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  collector:
+    build:
+      context: ./collector
+      dockerfile: Dockerfile
+    container_name: cti-collector
+    depends_on:
+      postgres:
+        condition: service_healthy
+      tor:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-cti_db}
+      DB_USER: ${DB_USER:-cti_user}
+      DB_PASSWORD: ${DB_PASSWORD}
+      COLLECTION_INTERVAL: ${COLLECTION_INTERVAL:-5m}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TOR_PROXY: tor:9050
+      USE_TOR: "true"
+    networks:
+      - cti_network
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: cti-dashboard
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${DASHBOARD_PORT:-8080}:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-cti_db}
+      DB_USER: ${DB_USER:-cti_user}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SESSION_SECRET: ${SESSION_SECRET}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    networks:
+      - cti_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  cti_network:
+    driver: bridge

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kategoriler - CTI Dashboard</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <link rel="stylesheet" href="/static/css/categories.css">
+</head>
+<body>
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>CTI Dashboard</h2>
+                <p>Tehdit İstihbaratı</p>
+            </div>
+            <nav>
+                <ul class="sidebar-nav">
+                    <li><a href="/dashboard">📊 Ana Sayfa</a></li>
+                    <li><a href="/categories" class="active">🏷️ Kategoriler</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-title">
+                    <h1>Kategori Yönetimi</h1>
+                </div>
+                <div class="header-user">
+                    <div class="user-info">
+                        <div class="username" id="user-username">Yükleniyor...</div>
+                        <div class="role" id="user-role"></div>
+                    </div>
+                    <button class="btn btn-danger btn-sm" id="logout-btn">Çıkış</button>
+                </div>
+            </header>
+
+            <!-- Content Area -->
+            <main class="content">
+                <!-- Alert Messages -->
+                <div id="success-message" class="alert alert-success hidden"></div>
+                <div id="error-message" class="alert alert-error hidden"></div>
+
+                <!-- Create Category Form -->
+                <div class="card">
+                    <h3>Yeni Kategori Oluştur</h3>
+                    <form id="create-category-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="category-name" class="form-label">İsim *</label>
+                                <input 
+                                    type="text" 
+                                    id="category-name" 
+                                    name="name" 
+                                    class="form-control" 
+                                    placeholder="örn: ransomware"
+                                    required
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label for="category-color" class="form-label">Renk *</label>
+                                <input 
+                                    type="color" 
+                                    id="category-color" 
+                                    name="color" 
+                                    class="form-control color-input" 
+                                    value="#3498db"
+                                    required
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label for="category-criticality" class="form-label">Varsayılan Kritiklik *</label>
+                                <input 
+                                    type="number" 
+                                    id="category-criticality" 
+                                    name="default_criticality" 
+                                    class="form-control" 
+                                    min="1" 
+                                    max="10" 
+                                    value="5"
+                                    required
+                                >
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="category-description" class="form-label">Açıklama</label>
+                            <textarea 
+                                id="category-description" 
+                                name="description" 
+                                class="form-control" 
+                                placeholder="Bu kategorinin kısa açıklaması"
+                                rows="3"
+                            ></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success">Kategori Oluştur</button>
+                    </form>
+                </div>
+
+                <!-- Categories List -->
+                <div class="card">
+                    <h3>Mevcut Kategoriler</h3>
+                    
+                    <div id="loading" class="text-center">
+                        <div class="spinner"></div>
+                    </div>
+
+                    <div id="categories-table-container" class="hidden">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>İsim</th>
+                                    <th>Açıklama</th>
+                                    <th>Varsayılan Kritiklik</th>
+                                    <th>Renk</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categories-table-body">
+                                <!-- Category rows will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Kategoriyi Düzenle</h3>
+                <button class="modal-close" id="close-modal">&times;</button>
+            </div>
+            <form id="edit-category-form">
+                <input type="hidden" id="edit-category-id">
+                <div class="form-group">
+                    <label for="edit-category-name" class="form-label">İsim *</label>
+                    <input 
+                        type="text" 
+                        id="edit-category-name" 
+                        name="name" 
+                        class="form-control" 
+                        required
+                    >
+                </div>
+                <div class="form-group">
+                    <label for="edit-category-description" class="form-label">Açıklama</label>
+                    <textarea 
+                        id="edit-category-description" 
+                        name="description" 
+                        class="form-control" 
+                        rows="3"
+                    ></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-category-criticality" class="form-label">Varsayılan Kritiklik *</label>
+                        <input 
+                            type="number" 
+                            id="edit-category-criticality" 
+                            name="default_criticality" 
+                            class="form-control" 
+                            min="1" 
+                            max="10" 
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-category-color" class="form-label">Renk *</label>
+                        <input 
+                            type="color" 
+                            id="edit-category-color" 
+                            name="color" 
+                            class="form-control color-input" 
+                            required
+                        >
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn" id="cancel-edit">İptal</button>
+                    <button type="submit" class="btn btn-success">Değişiklikleri Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/session.js"></script>
+    <script src="/static/js/categories.js"></script>
+</body>
+</html>
